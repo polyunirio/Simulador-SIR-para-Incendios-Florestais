@@ -4,18 +4,26 @@ import random
 import os
 import csv
 from matplotlib.lines import Line2D
-from Config import GRID_SIZE_X, GRID_SIZE_Y, TERRAIN_SUSCEPTIBILITY, TERRAIN_MAP_FILE, DEFAULT_VIEWSIZE_X, DEFAULT_VIEWSIZE_Y
+from Config import (GRID_SIZE_X, GRID_SIZE_Y, TERRAIN_SUSCEPTIBILITY,
+                    TERRAIN_MAP_FILE, DEFAULT_VIEWSIZE_X, DEFAULT_VIEWSIZE_Y,
+                    USE_DIAGONAL_CONNECTIONS)
 
 
 class Mapa:
     """Classe do mapa de terreno e respectivas propriedades"""
 
-    def __init__(self, grid_size_x=GRID_SIZE_X, grid_size_y=GRID_SIZE_Y, csv_file=None):
+    def __init__(self, grid_size_x=GRID_SIZE_X, grid_size_y=GRID_SIZE_Y,
+                 csv_file=None, use_diagonals=USE_DIAGONAL_CONNECTIONS):
         self.grid_size_x = grid_size_x
         self.grid_size_y = grid_size_y
-        self.graph = nx.grid_2d_graph(grid_size_x, grid_size_y)
-        self.node_colors = {}
+        self.use_diagonals = use_diagonals
 
+        self.graph = nx.grid_2d_graph(grid_size_x, grid_size_y)
+
+        if self.use_diagonals:
+            self._add_diagonal_connections()
+
+        self.node_colors = {}
         self.susceptibility = TERRAIN_SUSCEPTIBILITY
 
         if csv_file and os.path.exists(csv_file):
@@ -23,19 +31,36 @@ class Mapa:
         else:
             self.create_geographic_pattern()
 
+    def _add_diagonal_connections(self):
+        """Adiciona conexões diagonais ao grid"""
+        diagonal_edges = []
+
+        for x in range(self.grid_size_x):
+            for y in range(self.grid_size_y):
+                current = (x, y)
+
+                # Diagonal superior direita
+                if x < self.grid_size_x - 1 and y < self.grid_size_y - 1:
+                    diagonal_edges.append((current, (x + 1, y + 1)))
+
+                # Diagonal superior esquerda
+                if x > 0 and y < self.grid_size_y - 1:
+                    diagonal_edges.append((current, (x - 1, y + 1)))
+
+        self.graph.add_edges_from(diagonal_edges)
+        print(f"Conexões diagonais adicionadas: {len(diagonal_edges)} arestas")
+
     def create_geographic_pattern(self, seed=None):
         if seed is not None:
             random.seed(seed)
         colors = ['red', 'orange', 'blue', 'green']
-        weights = [0.2, 0.3, 0.3, 0.2]
+        weights = [0.2, 0.2, 0.4, 0.2]
         for node in self.graph.nodes():
             self.node_colors[node] = random.choices(
                 colors, weights=weights, k=1)[0]
 
     def load_map_from_csv(self, csv_file):
-
         try:
-            # Ler o arquivo CSV como uma matriz
             with open(csv_file, 'r') as file:
                 reader = csv.reader(file)
                 matrix = list(reader)
@@ -53,6 +78,9 @@ class Mapa:
                 self.graph = nx.grid_2d_graph(
                     self.grid_size_x, self.grid_size_y)
 
+                if self.use_diagonals:
+                    self._add_diagonal_connections()
+
             for node in self.graph.nodes():
                 self.node_colors[node] = 'green'
 
@@ -63,6 +91,8 @@ class Mapa:
 
             print(f"Mapa carregado com sucesso a partir do arquivo {csv_file}")
             print(f"Dimensões do mapa: {self.grid_size_x}x{self.grid_size_y}")
+            print(
+                f"Conexões diagonais: {'Sim' if self.use_diagonals else 'Não'}")
 
         except Exception as e:
             print(f"Erro ao carregar o arquivo CSV: {e}")
@@ -70,7 +100,6 @@ class Mapa:
             self.create_geographic_pattern()
 
     def save_map_to_csv(self, csv_file):
-
         try:
             with open(csv_file, 'w', newline='') as file:
                 writer = csv.writer(file)
@@ -87,7 +116,6 @@ class Mapa:
             print(f"Erro ao salvar o arquivo CSV: {e}")
 
     def visualize(self, title="Mapa de Terreno"):
-
         plt.figure(figsize=(DEFAULT_VIEWSIZE_X, DEFAULT_VIEWSIZE_Y))
         pos = {node: node for node in self.graph.nodes()}
 
@@ -97,7 +125,8 @@ class Mapa:
                                node_size=20/max(self.grid_size_x, self.grid_size_y))
         nx.draw_networkx_edges(self.graph, pos, alpha=0.1)
 
-        plt.title(title)
+        connection_type = "com diagonais" if self.use_diagonals else "ortogonais apenas"
+        plt.title(f"{title} ({connection_type})")
         plt.axis('on')
 
         legend_elements = [

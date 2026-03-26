@@ -1,8 +1,10 @@
 """ Configurações centralizadas """
 
 # Configurações do grid
-GRID_SIZE_X = 100
-GRID_SIZE_Y = 100
+GRID_SIZE_X = 250
+GRID_SIZE_Y = 250
+# True para incluir diagonais
+USE_DIAGONAL_CONNECTIONS = True
 
 # Configurações de simulação
 DEFAULT_SIMULATION_STEPS = 200
@@ -21,9 +23,9 @@ DEFAULT_VIEWSIZE_Y = 7
 # Definição das suscetibilidades de cada tipo de terreno
 TERRAIN_SUSCEPTIBILITY = {
     'red': 0.0,     # Nós imunes / rios
-    'orange': 0.3,  # Nós resistentes / Florestas úmidas
-    'blue': 0.6,    # Suscetíveis / Floresta de transição
-    'green': 0.9    # Altamente Suscetíveis / Mata seca
+    'orange': 0.008,  # Nós resistentes / Florestas úmidas
+    'blue': 0.17,    # Suscetíveis / Floresta de transição
+    'green': 0.29    # Altamente Suscetíveis / Mata seca
 }
 
 # Nomes de arquivos para saída
